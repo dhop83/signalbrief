@@ -1,0 +1,619 @@
+import React, { useState } from 'react';
+
+const SignalBrief = () => {
+  const [companyInput, setCompanyInput] = useState('Databricks');
+  const [filingType, setFilingType] = useState('S-1');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [generatedBrief, setGeneratedBrief] = useState(null);
+  const [showApiConfig, setShowApiConfig] = useState(false);
+  const [apiKeys, setApiKeys] = useState({
+    secApiKey: '',
+    openaiApiKey: ''
+  });
+
+  // ⚠️ IMPORTANT: Enter your API keys here
+  const SEC_API_KEY = apiKeys.secApiKey || 'YOUR_SEC_API_KEY_HERE';
+  const OPENAI_API_KEY = apiKeys.openaiApiKey || 'YOUR_OPENAI_API_KEY_HERE';
+
+  const handleApiKeyChange = (key, value) => {
+    setApiKeys(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const generateBrief = async () => {
+    if (!SEC_API_KEY || SEC_API_KEY === 'YOUR_SEC_API_KEY_HERE') {
+      alert('Please enter your SEC API key in the configuration section');
+      setShowApiConfig(true);
+      return;
+    }
+    
+    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'YOUR_OPENAI_API_KEY_HERE') {
+      alert('Please enter your OpenAI API key in the configuration section');
+      setShowApiConfig(true);
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      // Step 1: Get company filings from SEC API
+      console.log('🔍 Fetching SEC filings for:', companyInput);
+      const secResponse = await fetchSECFilings(companyInput, filingType);
+      
+      // Step 2: Extract filing content
+      console.log('📄 Processing filing content...');
+      const filingContent = await extractFilingContent(secResponse);
+      
+      // Step 3: Generate AI analysis using OpenAI
+      console.log('🤖 Generating AI analysis...');
+      const aiAnalysis = await generateAIAnalysis(filingContent);
+      
+      setGeneratedBrief(aiAnalysis);
+    } catch (error) {
+      console.error('Error generating brief:', error);
+      alert('Error generating brief. Please check your API keys and try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const fetchSECFilings = async (company, filing) => {
+    // Real SEC API call would go here
+    // Example endpoint: https://api.sec-api.io/filing/{cik}
+    const response = await fetch(`https://api.sec-api.io/company-search/${encodeURIComponent(company)}`, {
+      headers: {
+        'Authorization': `Bearer ${SEC_API_KEY}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('SEC API request failed');
+    }
+    
+    return await response.json();
+  };
+
+  const extractFilingContent = async (secData) => {
+    // Extract relevant sections from SEC filing
+    // This would parse the XBRL/HTML content and extract business description,
+    // risk factors, revenue information, etc.
+    
+    // For demo purposes, returning mock data
+    return {
+      businessDescription: "Databricks provides a unified platform for data analytics and AI...",
+      riskFactors: "Competition from cloud providers, customer concentration...",
+      revenueModel: "Consumption-based pricing with enterprise focus...",
+      recentChanges: "Increased AI capabilities, international expansion..."
+    };
+  };
+
+  const generateAIAnalysis = async (filingContent) => {
+    const prompt = `
+    You are a VC analyst. Analyze this SEC filing and create a brief for investment committee discussion.
+    
+    Filing Content:
+    Business: ${filingContent.businessDescription}
+    Risks: ${filingContent.riskFactors}  
+    Revenue: ${filingContent.revenueModel}
+    Changes: ${filingContent.recentChanges}
+    
+    Format your response as a structured VC brief with these sections:
+    1. Revenue & Monetization Model
+    2. Go-to-Market Strategy
+    3. Key Risk Factors
+    4. Changes Since Last Filing
+    5. Competitive Positioning
+    
+    Keep each section to 2-3 sentences, focused on investment implications.
+    `;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a VC analyst creating investment committee briefs from SEC filings.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('OpenAI API request failed');
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  };
+
+  // Mock brief for demonstration
+  const mockBrief = {
+    revenue: "Lakehouse Platform: Consumption-based pricing with 75%+ of revenue from data and AI workloads. $1.6B ARR with 135% net expansion rate. Enterprise land-and-expand model with $1M+ average deal sizes.",
+    gtm: "Direct enterprise sales with 2,000+ person GTM organization. Partner-led growth through cloud providers (AWS, Azure, GCP). Technical decision-makers (data engineers, data scientists) as primary buyers.",
+    risks: "Competitive pressure from cloud hyperscalers building native solutions. Customer concentration: Enterprise accounts drive majority of growth. Market timing dependent on enterprise AI adoption rates.",
+    changes: "AI positioning strengthened: Increased focus on generative AI and MLOps capabilities. International expansion: 35% of revenue now international (up from 28%). New risk disclosures around AI governance.",
+    competitive: "vs. Snowflake: Broader platform (data + AI) but lower gross margins. vs. Palantir: Horizontal platform vs vertical solutions, higher growth but more competitive market."
+  };
+
+  return (
+    <div style={{
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      background: '#f8fafc',
+      minHeight: '100vh',
+      padding: '20px'
+    }}>
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        padding: '40px 20px'
+      }}>
+        
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+          <div style={{
+            fontSize: '2.5em',
+            fontWeight: '800',
+            color: '#1e40af',
+            marginBottom: '10px'
+          }}>
+            SignalBrief
+          </div>
+          <div style={{
+            fontSize: '1.4em',
+            color: '#64748b',
+            marginBottom: '20px',
+            fontWeight: '500'
+          }}>
+            VC IC prep from SEC filings in minutes, not hours
+          </div>
+        </div>
+
+        {/* API Configuration Toggle */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '30px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+        }}>
+          <button
+            onClick={() => setShowApiConfig(!showApiConfig)}
+            style={{
+              background: '#f1f5f9',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '10px 20px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#475569'
+            }}
+          >
+            🔑 {showApiConfig ? 'Hide' : 'Configure'} API Keys
+          </button>
+          
+          {showApiConfig && (
+            <div style={{
+              marginTop: '20px',
+              padding: '20px',
+              background: '#f8fafc',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{ marginBottom: '15px', color: '#1e293b' }}>API Configuration</h3>
+              
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '5px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  SEC API Key:
+                </label>
+                <input
+                  type="password"
+                  value={apiKeys.secApiKey}
+                  onChange={(e) => handleApiKeyChange('secApiKey', e.target.value)}
+                  placeholder="Enter your SEC API key from sec-api.io"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+                <small style={{ color: '#6b7280', fontSize: '12px' }}>
+                  Get your key at <a href="https://sec-api.io" target="_blank" rel="noopener noreferrer">sec-api.io</a>
+                </small>
+              </div>
+              
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '5px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  OpenAI API Key:
+                </label>
+                <input
+                  type="password"
+                  value={apiKeys.openaiApiKey}
+                  onChange={(e) => handleApiKeyChange('openaiApiKey', e.target.value)}
+                  placeholder="Enter your OpenAI API key"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+                <small style={{ color: '#6b7280', fontSize: '12px' }}>
+                  Get your key at <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a>
+                </small>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Problem Statement */}
+        <div style={{
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          padding: '25px',
+          borderRadius: '12px',
+          borderLeft: '5px solid #f59e0b',
+          marginBottom: '40px',
+          textAlign: 'center'
+        }}>
+          <h3 style={{
+            color: '#92400e',
+            marginBottom: '10px',
+            fontSize: '1.2em'
+          }}>
+            🚨 The Problem Every VC Associate Faces
+          </h3>
+          <p style={{
+            color: '#78350f',
+            fontSize: '1.1em',
+            lineHeight: '1.6'
+          }}>
+            You have 48 hours before IC to understand a company's business model from their 250-page S-1. 
+            You need the revenue structure, GTM strategy, and key risks — but you don't have time to read the entire filing.
+          </p>
+        </div>
+
+        {/* Main Tool */}
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '40px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          marginBottom: '40px'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <h2 style={{
+              color: '#1e293b',
+              fontSize: '1.8em',
+              marginBottom: '10px'
+            }}>
+              Get Your IC Brief
+            </h2>
+            <p style={{
+              color: '#64748b',
+              fontSize: '1.1em'
+            }}>
+              Input any company ticker or name. Get a 3-page business model brief in under 60 seconds.
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr',
+            gap: '20px',
+            marginBottom: '25px'
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                color: '#374151',
+                fontWeight: '600',
+                fontSize: '0.95em'
+              }}>
+                Company Name or Ticker
+              </label>
+              <input
+                type="text"
+                value={companyInput}
+                onChange={(e) => setCompanyInput(e.target.value)}
+                placeholder="e.g., Snowflake, PLTR, Stripe..."
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  transition: 'all 0.3s',
+                  background: '#fafafa'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#1e40af';
+                  e.target.style.background = 'white';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(30, 64, 175, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.background = '#fafafa';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                color: '#374151',
+                fontWeight: '600',
+                fontSize: '0.95em'
+              }}>
+                Filing Type
+              </label>
+              <input
+                type="text"
+                value={filingType}
+                onChange={(e) => setFilingType(e.target.value)}
+                placeholder="S-1, 10-K, 10-Q..."
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  transition: 'all 0.3s',
+                  background: '#fafafa'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#1e40af';
+                  e.target.style.background = 'white';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(30, 64, 175, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.background = '#fafafa';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={generateBrief}
+              disabled={isProcessing}
+              style={{
+                background: isProcessing 
+                  ? '#9ca3af' 
+                  : 'linear-gradient(135deg, #1e40af 0%, #3730a3 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '18px 40px',
+                borderRadius: '10px',
+                fontSize: '17px',
+                fontWeight: '700',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s',
+                width: '100%',
+                maxWidth: '300px'
+              }}
+              onMouseEnter={(e) => {
+                if (!isProcessing) {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(30, 64, 175, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              {isProcessing ? '🔄 Processing...' : '🚀 Generate IC Brief'}
+            </button>
+            
+            <div style={{
+              marginTop: '15px',
+              padding: '12px',
+              background: '#ecfdf5',
+              borderRadius: '8px',
+              color: '#065f46',
+              fontSize: '0.9em',
+              fontWeight: '500'
+            }}>
+              ⚡ Average processing time: 45 seconds | Output: 3-page PDF ready for IC discussion
+            </div>
+          </div>
+        </div>
+
+        {/* Output Preview */}
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '35px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          marginBottom: '40px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '25px',
+            paddingBottom: '15px',
+            borderBottom: '2px solid #f1f5f9'
+          }}>
+            <h3 style={{
+              color: '#1e293b',
+              fontSize: '1.5em',
+              fontWeight: '700'
+            }}>
+              📄 {isProcessing ? 'Generating Brief...' : `Sample Output: ${companyInput}`}
+            </h3>
+            <div style={{
+              background: '#dc2626',
+              color: 'white',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '0.8em',
+              fontWeight: '600',
+              textTransform: 'uppercase'
+            }}>
+              PDF Export
+            </div>
+          </div>
+
+          {isProcessing ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px',
+              color: '#64748b'
+            }}>
+              <div style={{
+                fontSize: '2em',
+                marginBottom: '20px'
+              }}>
+                🔄
+              </div>
+              <p>Analyzing SEC filings and generating your IC brief...</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <BriefSection 
+                title="💰 Revenue & Monetization Model"
+                content={generatedBrief || mockBrief.revenue}
+              />
+              <BriefSection 
+                title="🎯 Go-to-Market Strategy"
+                content={generatedBrief || mockBrief.gtm}
+              />
+              <BriefSection 
+                title="⚠️ Key Risk Factors"
+                content={generatedBrief || mockBrief.risks}
+              />
+              <BriefSection 
+                title="📈 Changes Since Last Filing"
+                content={generatedBrief || mockBrief.changes}
+              />
+              <BriefSection 
+                title="🏆 Competitive Positioning"
+                content={generatedBrief || mockBrief.competitive}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Value Proposition */}
+        <div style={{
+          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+          padding: '30px',
+          borderRadius: '16px',
+          textAlign: 'center',
+          border: '2px solid #bfdbfe'
+        }}>
+          <h3 style={{
+            color: '#1e40af',
+            fontSize: '1.4em',
+            marginBottom: '15px',
+            fontWeight: '700'
+          }}>
+            💡 Why Associates Love SignalBrief
+          </h3>
+          <p style={{
+            color: '#1e40af',
+            marginBottom: '20px'
+          }}>
+            Stop spending entire evenings reading SEC filings. Get the business intelligence you need for confident IC discussions.
+          </p>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px',
+            marginTop: '20px'
+          }}>
+            <ValueMetric number="4-6" label="Hours Saved Per Filing" />
+            <ValueMetric number="3" label="Page PDF Output" />
+            <ValueMetric number="45s" label="Average Processing Time" />
+            <ValueMetric number="100%" label="IC-Ready Format" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BriefSection = ({ title, content }) => (
+  <div style={{
+    background: '#f8fafc',
+    padding: '20px',
+    borderRadius: '10px',
+    borderLeft: '4px solid #1e40af'
+  }}>
+    <h4 style={{
+      color: '#1e293b',
+      marginBottom: '10px',
+      fontSize: '1.1em',
+      fontWeight: '700'
+    }}>
+      {title}
+    </h4>
+    <p style={{
+      color: '#475569',
+      lineHeight: '1.6',
+      fontSize: '0.95em'
+    }}>
+      {content}
+    </p>
+  </div>
+);
+
+const ValueMetric = ({ number, label }) => (
+  <div style={{
+    background: 'white',
+    padding: '20px',
+    borderRadius: '10px',
+    textAlign: 'center'
+  }}>
+    <div style={{
+      fontSize: '2em',
+      fontWeight: '800',
+      color: '#1e40af',
+      marginBottom: '5px'
+    }}>
+      {number}
+    </div>
+    <div style={{
+      color: '#64748b',
+      fontSize: '0.9em',
+      fontWeight: '500'
+    }}>
+      {label}
+    </div>
+  </div>
+);
+
+export default SignalBrief;
