@@ -24,13 +24,13 @@ const SignalBrief = () => {
 
   const generateBrief = async () => {
     if (!SEC_API_KEY || SEC_API_KEY === 'YOUR_SEC_API_KEY_HERE') {
-      alert('Please enter your SEC API key in the configuration section');
+      alert('⚠️ Please enter your SEC API key in the configuration section above');
       setShowApiConfig(true);
       return;
     }
     
     if (!OPENAI_API_KEY || OPENAI_API_KEY === 'YOUR_OPENAI_API_KEY_HERE') {
-      alert('Please enter your OpenAI API key in the configuration section');
+      alert('⚠️ Please enter your OpenAI API key in the configuration section above');
       setShowApiConfig(true);
       return;
     }
@@ -52,8 +52,8 @@ const SignalBrief = () => {
       
       setGeneratedBrief(aiAnalysis);
     } catch (error) {
-      console.error('Error generating brief:', error);
-      alert('Error generating brief. Please check your API keys and try again.');
+      console.error('❌ Error generating brief:', error);
+      alert(`Error generating brief: ${error.message}\n\nPlease check your API keys and try again.`);
     } finally {
       setIsProcessing(false);
     }
@@ -186,21 +186,26 @@ const SignalBrief = () => {
         <div style={{
           background: 'white',
           borderRadius: '12px',
-          padding: '20px',
+          padding: '25px',
           marginBottom: '30px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          border: '1px solid #e2e8f0'
         }}>
           <button
             onClick={() => setShowApiConfig(!showApiConfig)}
             style={{
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              background: showApiConfig ? '#1e40af' : '#f1f5f9',
+              color: showApiConfig ? 'white' : '#475569',
+              border: 'none',
               borderRadius: '8px',
-              padding: '10px 20px',
+              padding: '12px 24px',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
-              color: '#475569'
+              transition: 'all 0.3s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
             🔑 {showApiConfig ? 'Hide' : 'Configure'} API Keys
@@ -208,20 +213,28 @@ const SignalBrief = () => {
           
           {showApiConfig && (
             <div style={{
-              marginTop: '20px',
-              padding: '20px',
+              marginTop: '25px',
+              padding: '25px',
               background: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0'
+              borderRadius: '12px',
+              border: '2px solid #e2e8f0'
             }}>
-              <h3 style={{ marginBottom: '15px', color: '#1e293b' }}>API Configuration</h3>
+              <h3 style={{ 
+                marginBottom: '20px', 
+                color: '#1e293b',
+                fontSize: '1.2em',
+                fontWeight: '700'
+              }}>
+                🔧 API Configuration
+              </h3>
               
-              <div style={{ marginBottom: '15px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{
                   display: 'block',
-                  marginBottom: '5px',
+                  marginBottom: '8px',
                   fontWeight: '600',
-                  color: '#374151'
+                  color: '#374151',
+                  fontSize: '0.95em'
                 }}>
                   SEC API Key:
                 </label>
@@ -232,23 +245,40 @@ const SignalBrief = () => {
                   placeholder="Enter your SEC API key from sec-api.io"
                   style={{
                     width: '100%',
-                    padding: '12px',
+                    padding: '14px 16px',
                     border: '2px solid #e5e7eb',
-                    borderRadius: '6px',
-                    fontSize: '14px'
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: 'white',
+                    transition: 'border-color 0.3s'
                   }}
+                  onFocus={(e) => e.target.style.borderColor = '#1e40af'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 />
-                <small style={{ color: '#6b7280', fontSize: '12px' }}>
-                  Get your key at <a href="https://sec-api.io" target="_blank" rel="noopener noreferrer">sec-api.io</a>
-                </small>
+                <div style={{ 
+                  marginTop: '6px',
+                  fontSize: '12px',
+                  color: '#6b7280'
+                }}>
+                  📍 Get your key at{' '}
+                  <a 
+                    href="https://sec-api.io" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#1e40af', textDecoration: 'none' }}
+                  >
+                    sec-api.io
+                  </a>
+                </div>
               </div>
               
               <div style={{ marginBottom: '15px' }}>
                 <label style={{
                   display: 'block',
-                  marginBottom: '5px',
+                  marginBottom: '8px',
                   fontWeight: '600',
-                  color: '#374151'
+                  color: '#374151',
+                  fontSize: '0.95em'
                 }}>
                   OpenAI API Key:
                 </label>
@@ -259,15 +289,44 @@ const SignalBrief = () => {
                   placeholder="Enter your OpenAI API key"
                   style={{
                     width: '100%',
-                    padding: '12px',
+                    padding: '14px 16px',
                     border: '2px solid #e5e7eb',
-                    borderRadius: '6px',
-                    fontSize: '14px'
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: 'white',
+                    transition: 'border-color 0.3s'
                   }}
+                  onFocus={(e) => e.target.style.borderColor = '#1e40af'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 />
-                <small style={{ color: '#6b7280', fontSize: '12px' }}>
-                  Get your key at <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a>
-                </small>
+                <div style={{ 
+                  marginTop: '6px',
+                  fontSize: '12px',
+                  color: '#6b7280'
+                }}>
+                  📍 Get your key at{' '}
+                  <a 
+                    href="https://platform.openai.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#1e40af', textDecoration: 'none' }}
+                  >
+                    platform.openai.com
+                  </a>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                background: '#fef3c7',
+                borderRadius: '8px',
+                border: '1px solid #fbbf24',
+                fontSize: '13px',
+                color: '#92400e'
+              }}>
+                <strong>💡 Note:</strong> Your API keys are stored locally in your browser and never sent to our servers. 
+                They're only used to make direct API calls to SEC API and OpenAI.
               </div>
             </div>
           )}
@@ -325,7 +384,7 @@ const SignalBrief = () => {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '2fr 1fr',
+            gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '2fr 1fr',
             gap: '20px',
             marginBottom: '25px'
           }}>
